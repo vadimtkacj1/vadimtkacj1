@@ -1,4 +1,4 @@
-### Hi there 👋
+
 <img src="https://i.gifer.com/origin/0d/0dc2d72a7e113a5de47086d3e3d15850_w200.gif" style="width: 200px;">
 <!--
 **vadimtkacj1/vadimtkacj1** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
