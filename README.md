@@ -11,6 +11,13 @@ I build machine learning systems end to end — from data and model training to 
 
 <br>
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/training-run-dark.svg">
+  <img alt="Training run: weekly GitHub contributions over the last 52 weeks" src="assets/training-run-light.svg" width="100%">
+</picture>
+
+<br>
+
 ### Focus
 
 | | |
