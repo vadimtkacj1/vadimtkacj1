@@ -16,6 +16,11 @@ I build AI products end to end — from data and model training to the API and t
   <img alt="Training run: weekly GitHub contributions over the last 52 weeks" src="assets/training-run-light.svg" width="100%">
 </picture>
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/agent-dark.svg">
+  <img alt="Agent trace: latest commits across recently active repositories" src="assets/agent-light.svg" width="100%">
+</picture>
+
 <br>
 
 ### Focus

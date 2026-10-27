@@ -1,3 +1,4 @@
+import html
 import json
 import re
 import sys
@@ -209,12 +210,80 @@ def render_inference(languages, theme):
 '''
 
 
+def github_json(path):
+    request = urllib.request.Request(
+        f"https://api.github.com{path}",
+        headers={"User-Agent": "training-run-card", "Accept": "application/vnd.github+json"},
+    )
+    return json.loads(urllib.request.urlopen(request, timeout=30).read().decode("utf-8"))
+
+
+def fetch_recent_work(user, limit=4):
+    repos = github_json(f"/users/{user}/repos?per_page=30&sort=pushed&type=owner")
+    work = []
+    for repo in repos:
+        if repo.get("fork") or repo["name"] == user:
+            continue
+        commits = github_json(f"/repos/{user}/{repo['name']}/commits?per_page=1")
+        if not commits:
+            continue
+        message = commits[0]["commit"]["message"].splitlines()[0]
+        pushed = datetime.fromisoformat(commits[0]["commit"]["author"]["date"].replace("Z", "+00:00"))
+        work.append((repo["name"], message, pushed))
+        if len(work) == limit:
+            break
+    return work
+
+
+def ago(moment):
+    hours = int((datetime.now(timezone.utc) - moment).total_seconds() // 3600)
+    if hours < 24:
+        return f"{max(hours, 1)}h ago"
+    return f"{hours // 24}d ago"
+
+
+def clip(text, length):
+    text = text if len(text) <= length else text[: length - 1] + "…"
+    return html.escape(text, quote=True)
+
+
+def render_agent(work, theme):
+    colors = THEMES[theme]
+    lines = [(colors["muted"], f'task: "keep shipping"', "")]
+    for repo, message, pushed in work:
+        lines.append((colors["dot"], f'→ tool_call  git.log(repo="{clip(repo, 34)}")', ""))
+        lines.append((colors["text"], f'  ✓ {clip(message, 62)}', ago(pushed)))
+    lines.append((colors["line"], f"✓ done · {len(work)} repositories shipped recently", ""))
+    height = 92 + len(lines) * 26 + 20
+    rows = "".join(
+        f'<g opacity="0"><animate attributeName="opacity" from="0" to="1" begin="{0.3 + index * 0.35:.2f}s" dur="0.25s" fill="freeze"/>'
+        f'<text x="40" y="{100 + index * 26}" font-family="{MONO}" font-size="14" fill="{color}">{text}</text>'
+        + (f'<text x="1160" y="{100 + index * 26}" font-family="{MONO}" font-size="13" fill="{colors["muted"]}" text-anchor="end">{note}</text>' if note else "")
+        + "</g>"
+        for index, (color, text, note) in enumerate(lines)
+    )
+    cursor_y = 100 + (len(lines) - 1) * 26
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}">
+  <rect x="0.5" y="0.5" width="{WIDTH - 1}" height="{height - 1}" rx="12" fill="{colors["bg"]}" stroke="{colors["border"]}"/>
+  <circle cx="28" cy="30" r="5" fill="#ff5f57"/><circle cx="46" cy="30" r="5" fill="#febc2e"/><circle cx="64" cy="30" r="5" fill="#28c840"/>
+  <text x="88" y="35" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">agent.run() · live trace of recent commits</text>
+  <line x1="0" y1="56" x2="{WIDTH}" y2="56" stroke="{colors["border"]}"/>
+  {rows}
+  <rect x="{40 + 9 * 46}" y="{cursor_y - 13}" width="8" height="16" fill="{colors["line"]}" opacity="0">
+    <animate attributeName="opacity" values="0;1;0" begin="{0.3 + len(lines) * 0.35:.2f}s" dur="1s" repeatCount="indefinite"/>
+  </rect>
+</svg>
+'''
+
+
 def main():
     output = Path(sys.argv[1] if len(sys.argv) > 1 else "assets")
     output.mkdir(parents=True, exist_ok=True)
     days = fetch_days(USER)
     languages = fetch_languages(USER)
+    work = fetch_recent_work(USER)
     for theme in THEMES:
+        (output / f"agent-{theme}.svg").write_text(render_agent(work, theme), encoding="utf-8")
         (output / f"training-run-{theme}.svg").write_text(render(days, theme), encoding="utf-8")
         (output / f"inference-{theme}.svg").write_text(render_inference(languages, theme), encoding="utf-8")
 
