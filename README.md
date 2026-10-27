@@ -20,12 +20,10 @@ I build machine learning systems end to end — from data and model training to 
 
 ### Focus
 
-| | |
-|---|---|
-| **Computer vision** | Semantic segmentation (U-Net family), classification, detection, embeddings for retrieval |
-| **Recommender systems** | Hybrid collaborative + content-based ranking, cold-start handling, offline evaluation |
-| **Applied NLP** | Text classification, NER, parameter-efficient fine-tuning (LoRA) |
-| **ML in production** | FastAPI services, Docker, reproducible training, model serving behind real products |
+- **Computer vision** — semantic segmentation (U-Net family), classification, detection, embeddings for retrieval
+- **Recommender systems** — hybrid collaborative + content-based ranking, cold-start handling, offline evaluation
+- **Applied NLP** — text classification, NER, parameter-efficient fine-tuning (LoRA)
+- **ML in production** — FastAPI services, Docker, reproducible training, model serving behind real products
 
 <br>
 
