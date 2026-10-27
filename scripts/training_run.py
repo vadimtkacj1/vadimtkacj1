@@ -182,7 +182,7 @@ def probability_bar(x, y, width, share, color, track, delay):
 
 def render_inference(languages, theme):
     colors = THEMES[theme]
-    height = 300
+    height = 250
     predictions = "".join(
         f'<text x="40" y="{120 + index * 46}" font-family="{SANS}" font-size="{18 if index == 0 else 15}" font-weight="{700 if index == 0 else 400}" fill="{colors["text"] if index == 0 else colors["muted"]}">{label}</text>'
         f'<text x="540" y="{120 + index * 46}" font-family="{MONO}" font-size="14" fill="{colors["text"] if index == 0 else colors["muted"]}" text-anchor="end">p={share:.2f}</text>'
