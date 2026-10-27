@@ -44,6 +44,12 @@ I build AI products end to end — from data and model training to the API and t
 
 ### Stack
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/inference-dark.svg">
+  <img alt="Model prediction: AI Engineer, with languages by repository as input features" src="assets/inference-light.svg" width="100%">
+</picture>
+
+
 **LLM** &nbsp; Transformers · PEFT / LoRA · pgvector · OpenAI, Claude and Gemini APIs  
 **ML** &nbsp; Python · PyTorch · TensorFlow · scikit-learn · XGBoost · OpenCV · pandas · NumPy  
 **Serving** &nbsp; FastAPI · Docker · PostgreSQL · Linux  

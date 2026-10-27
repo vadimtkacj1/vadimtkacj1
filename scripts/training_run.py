@@ -1,3 +1,4 @@
+import json
 import re
 import sys
 import urllib.request
@@ -152,12 +153,70 @@ def render(days, theme):
 '''
 
 
+PREDICTIONS = [("AI Engineer", 0.91), ("ML Engineer", 0.06), ("Full-stack Developer", 0.03)]
+
+
+def fetch_languages(user):
+    request = urllib.request.Request(
+        f"https://api.github.com/users/{user}/repos?per_page=100&type=owner",
+        headers={"User-Agent": "training-run-card", "Accept": "application/vnd.github+json"},
+    )
+    repos = json.loads(urllib.request.urlopen(request, timeout=30).read().decode("utf-8"))
+    counts = {}
+    for repo in repos:
+        language = repo.get("language")
+        if language and not repo.get("fork"):
+            counts[language] = counts.get(language, 0) + 1
+    total = sum(counts.values()) or 1
+    return [(name, count / total) for name, count in sorted(counts.items(), key=lambda item: -item[1])][:5]
+
+
+def probability_bar(x, y, width, share, color, track, delay):
+    filled = max(width * share, 4)
+    return (
+        f'<rect x="{x}" y="{y}" width="{width}" height="8" rx="4" fill="{track}"/>'
+        f'<rect x="{x}" y="{y}" width="0" height="8" rx="4" fill="{color}">'
+        f'<animate attributeName="width" from="0" to="{filled:.1f}" begin="{delay:.2f}s" dur="1.1s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" keyTimes="0;1"/></rect>'
+    )
+
+
+def render_inference(languages, theme):
+    colors = THEMES[theme]
+    height = 300
+    predictions = "".join(
+        f'<text x="40" y="{120 + index * 46}" font-family="{SANS}" font-size="{18 if index == 0 else 15}" font-weight="{700 if index == 0 else 400}" fill="{colors["text"] if index == 0 else colors["muted"]}">{label}</text>'
+        f'<text x="540" y="{120 + index * 46}" font-family="{MONO}" font-size="14" fill="{colors["text"] if index == 0 else colors["muted"]}" text-anchor="end">p={share:.2f}</text>'
+        + probability_bar(40, 132 + index * 46, 500, share, colors["line"] if index == 0 else colors["bar"], colors["grid"], 0.2 + index * 0.25)
+        for index, (label, share) in enumerate(PREDICTIONS)
+    )
+    features = "".join(
+        f'<text x="640" y="{120 + index * 34}" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">{name}</text>'
+        f'<text x="1160" y="{120 + index * 34}" font-family="{MONO}" font-size="13" fill="{colors["text"]}" text-anchor="end">{share:.0%}</text>'
+        + probability_bar(800, 112, 300, share, colors["dot"], colors["grid"], 0.6 + index * 0.15).replace('y="112"', f'y="{112 + index * 34}"')
+        for index, (name, share) in enumerate(languages)
+    )
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}">
+  <rect x="0.5" y="0.5" width="{WIDTH - 1}" height="{height - 1}" rx="12" fill="{colors["bg"]}" stroke="{colors["border"]}"/>
+  <circle cx="28" cy="30" r="5" fill="#ff5f57"/><circle cx="46" cy="30" r="5" fill="#febc2e"/><circle cx="64" cy="30" r="5" fill="#28c840"/>
+  <text x="88" y="35" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">&gt;&gt;&gt; model.predict("github.com/{USER}")</text>
+  <line x1="0" y1="56" x2="{WIDTH}" y2="56" stroke="{colors["border"]}"/>
+  <text x="40" y="84" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" letter-spacing="1.5">PREDICTED ROLE</text>
+  <text x="640" y="84" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" letter-spacing="1.5">INPUT FEATURES · LANGUAGES BY REPOSITORY</text>
+  <line x1="600" y1="76" x2="600" y2="{height - 28}" stroke="{colors["border"]}"/>
+  {predictions}
+  {features}
+</svg>
+'''
+
+
 def main():
     output = Path(sys.argv[1] if len(sys.argv) > 1 else "assets")
     output.mkdir(parents=True, exist_ok=True)
     days = fetch_days(USER)
+    languages = fetch_languages(USER)
     for theme in THEMES:
         (output / f"training-run-{theme}.svg").write_text(render(days, theme), encoding="utf-8")
+        (output / f"inference-{theme}.svg").write_text(render_inference(languages, theme), encoding="utf-8")
 
 
 if __name__ == "__main__":
