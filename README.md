@@ -1,13 +1,13 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/header-dark.svg">
-  <img alt="Vadim Tkachenko — Machine Learning Engineer" src="assets/header-light.svg" width="100%">
+  <img alt="Vadim Tkachenko — AI Engineer" src="assets/header-light.svg" width="100%">
 </picture>
 
 <br>
 
-I build machine learning systems end to end — from data and model training to the API and the interface people actually use. My background in full-stack development means models I train ship as working products, not notebooks.
+I build AI products end to end — from data and model training to the API and the interface people actually use. I work with LLMs and train my own vision and ranking models, and my full-stack background means they ship as working products, not notebooks.
 
-**Currently:** recommender systems, medical image segmentation, and retrieval over images and text.
+**Currently:** LLM agents, retrieval (RAG), and fine-tuning open models.
 
 <br>
 
@@ -20,9 +20,10 @@ I build machine learning systems end to end — from data and model training to 
 
 ### Focus
 
+- **LLM applications** — retrieval (RAG), agents with tool use, LoRA fine-tuning, evaluation of model output
 - **Computer vision** — semantic segmentation (U-Net family), classification, detection, embeddings for retrieval
 - **Recommender systems** — hybrid collaborative + content-based ranking, cold-start handling, offline evaluation
-- **Applied NLP** — text classification, NER, parameter-efficient fine-tuning (LoRA)
+- **Applied NLP** — text classification, NER
 - **ML in production** — FastAPI services, Docker, reproducible training, model serving behind real products
 
 <br>
@@ -43,8 +44,9 @@ I build machine learning systems end to end — from data and model training to 
 
 ### Stack
 
-**ML** &nbsp; Python · PyTorch · TensorFlow · scikit-learn · XGBoost · Hugging Face · OpenCV · pandas · NumPy  
-**Serving** &nbsp; FastAPI · Docker · PostgreSQL · pgvector · Linux  
+**LLM** &nbsp; Transformers · PEFT / LoRA · pgvector · OpenAI, Claude and Gemini APIs  
+**ML** &nbsp; Python · PyTorch · TensorFlow · scikit-learn · XGBoost · OpenCV · pandas · NumPy  
+**Serving** &nbsp; FastAPI · Docker · PostgreSQL · Linux  
 **Product** &nbsp; TypeScript · React · Next.js · Node.js · Tailwind
 
 <br>
