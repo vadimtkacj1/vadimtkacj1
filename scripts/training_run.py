@@ -269,7 +269,7 @@ def render_agent(work, theme):
   <text x="88" y="35" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">agent.run() · live trace of recent commits</text>
   <line x1="0" y1="56" x2="{WIDTH}" y2="56" stroke="{colors["border"]}"/>
   {rows}
-  <rect x="{40 + 9 * 46}" y="{cursor_y - 13}" width="8" height="16" fill="{colors["line"]}" opacity="0">
+  <rect x="{48 + len(lines[-1][1]) * 8.4:.0f}" y="{cursor_y - 13}" width="8" height="16" fill="{colors["line"]}" opacity="0">
     <animate attributeName="opacity" values="0;1;0" begin="{0.3 + len(lines) * 0.35:.2f}s" dur="1s" repeatCount="indefinite"/>
   </rect>
 </svg>
