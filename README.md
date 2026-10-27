@@ -32,12 +32,12 @@ I build AI products end to end — from data and model training to the API and t
 
 | Project | What it does | Stack |
 |---|---|---|
-| [**hybrid-recommendation-system**](https://github.com/vadimtkacj1/hybrid-recommendation-system-diplom) | Thesis: hybrid recommender combining collaborative filtering and content features | Python · PyTorch · scikit-learn |
+| [**lora-fine-tuning-service**](https://github.com/vadimtkacj1/fine-tuning-llama) | REST service that fine-tunes LLaMA on uploaded dialogues | FastAPI · Transformers · PEFT |
+| [**real-estate-appraisal**](https://github.com/vadimtkacj1/real-estate-appraisal-agent) | Price estimate from a plain-language description: LLM parses the query, XGBoost predicts, LLM explains | Gemini · XGBoost · Gradio |
+| [**clip-retrieval**](https://github.com/vadimtkacj1/clip-retrieval-ai) | Text-to-image and image-to-image search, CLIP vs ResNet-18 embeddings | CLIP · ResNet · NumPy |
 | [**vessel-segmentation**](https://github.com/vadimtkacj1/vessel-segmentation) | Retinal vessel segmentation on fundus images | PyTorch · segmentation-models · Albumentations |
 | [**brain-tumour-segmentation**](https://github.com/vadimtkacj1/brain-tumour-segmentation) | Tumour region segmentation on MRI scans | PyTorch · OpenCV |
-| [**clip-retrieval**](https://github.com/vadimtkacj1/clip-retrieval-ai) | Text-to-image and image-to-image search, CLIP vs ResNet-18 embeddings | CLIP · ResNet · NumPy |
-| [**real-estate-appraisal**](https://github.com/vadimtkacj1/real-estate-appraisal-agent) | Property price estimation from plain-language descriptions | XGBoost · Gradio |
-| [**lora-fine-tuning-service**](https://github.com/vadimtkacj1/fine-tuning-llama) | REST service that fine-tunes LLaMA on uploaded dialogues | FastAPI · Transformers · PEFT |
+| [**hybrid-recommendation-system**](https://github.com/vadimtkacj1/hybrid-recommendation-system-diplom) | Thesis: hybrid recommender combining collaborative filtering and content features | Python · PyTorch · scikit-learn |
 | [**crm**](https://github.com/vadimtkacj1/aiterra-crm) | Production CRM for a small business, shipped and in daily use | JavaScript · Node.js |
 
 <br>
