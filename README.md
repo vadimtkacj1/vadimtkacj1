@@ -1,11 +1,11 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/header-dark.svg">
-  <img alt="Vadim Tkachenko — AI Engineer" src="assets/header-light.svg" width="100%">
+  <img alt="Vadim Tkachenko, AI Engineer" src="assets/header-light.svg" width="100%">
 </picture>
 
-I build AI products end to end — from data and model training to the API and the interface people actually use. I work with LLMs and train my own vision and ranking models, and my full-stack background means they ship as working products, not notebooks.
+I build AI products end to end: from data and model training to the API and the interface people actually use. I work with LLMs and train my own vision and ranking models, and my full-stack background means they ship as working products, not notebooks.
 
-**Currently:** measuring answer quality in RAG — faithfulness and citation precision.  
+**Currently:** measuring answer quality in RAG: faithfulness and citation precision.  
 **Open to** AI engineering roles and freelance projects · [LinkedIn](https://www.linkedin.com/in/vadim-tkachenko-19842b241) · [vadim.tkach1378@gmail.com](mailto:vadim.tkach1378@gmail.com)
 
 ### Selected work
@@ -67,10 +67,10 @@ flowchart LR
 
 ### Focus
 
-- **LLM applications** — retrieval (RAG) with measured retrievers, structured extraction, tool-calling assistants, LoRA / QLoRA fine-tuning
-- **Computer vision** — semantic segmentation (DeepLabV3+, U-Net, Attention U-Net), image embeddings for retrieval
-- **Recommender systems** — hybrid content + collaborative ranking, diversification, cold start, offline evaluation
-- **ML in production** — FastAPI services, background jobs, Docker Compose deployments, the frontend that uses the model
+- **LLM applications:** retrieval (RAG) with measured retrievers, structured extraction, tool-calling assistants, LoRA / QLoRA fine-tuning
+- **Computer vision:** semantic segmentation (DeepLabV3+, U-Net, Attention U-Net), image embeddings for retrieval
+- **Recommender systems:** hybrid content + collaborative ranking, diversification, cold start, offline evaluation
+- **ML in production:** FastAPI services, background jobs, Docker Compose deployments, the frontend that uses the model
 
 ### Stack
 
