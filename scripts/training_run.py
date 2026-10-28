@@ -356,7 +356,7 @@ def render_skyline(days):
             continue
         week = (day.toordinal() - start) // 7
         weekday = (day.weekday() + 1) % 7
-        triangles += box(week + 0.1, 6 - weekday + 0.1, 0, 0.8, 0.8, 0.6 + 11 * (count / peak) ** 0.5)
+        triangles += box(week + 0.1, 6 - weekday + 0.1, 0, 0.8, 0.8, 0.8 + 24 * (count / peak) ** 0.5)
     lines = ["solid contributions"]
     for normal, *vertices in triangles:
         lines.append(f"facet normal {' '.join(number(v) for v in normal)}")
