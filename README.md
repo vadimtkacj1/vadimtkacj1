@@ -12197,72 +12197,72 @@ endloop
 endfacet
 facet normal 0 0 1
 outer loop
-vertex 52.1 3.1 4.66
-vertex 52.9 3.1 4.66
-vertex 52.9 3.9 4.66
+vertex 52.1 3.1 4.8
+vertex 52.9 3.1 4.8
+vertex 52.9 3.9 4.8
 endloop
 endfacet
 facet normal 0 0 1
 outer loop
-vertex 52.1 3.1 4.66
-vertex 52.9 3.9 4.66
-vertex 52.1 3.9 4.66
+vertex 52.1 3.1 4.8
+vertex 52.9 3.9 4.8
+vertex 52.1 3.9 4.8
 endloop
 endfacet
 facet normal 0 -1 0
 outer loop
 vertex 52.1 3.1 0
 vertex 52.9 3.1 0
-vertex 52.9 3.1 4.66
+vertex 52.9 3.1 4.8
 endloop
 endfacet
 facet normal 0 -1 0
 outer loop
 vertex 52.1 3.1 0
-vertex 52.9 3.1 4.66
-vertex 52.1 3.1 4.66
+vertex 52.9 3.1 4.8
+vertex 52.1 3.1 4.8
 endloop
 endfacet
 facet normal 0 1 0
 outer loop
 vertex 52.9 3.9 0
 vertex 52.1 3.9 0
-vertex 52.1 3.9 4.66
+vertex 52.1 3.9 4.8
 endloop
 endfacet
 facet normal 0 1 0
 outer loop
 vertex 52.9 3.9 0
-vertex 52.1 3.9 4.66
-vertex 52.9 3.9 4.66
+vertex 52.1 3.9 4.8
+vertex 52.9 3.9 4.8
 endloop
 endfacet
 facet normal -1 0 0
 outer loop
 vertex 52.1 3.9 0
 vertex 52.1 3.1 0
-vertex 52.1 3.1 4.66
+vertex 52.1 3.1 4.8
 endloop
 endfacet
 facet normal -1 0 0
 outer loop
 vertex 52.1 3.9 0
-vertex 52.1 3.1 4.66
-vertex 52.1 3.9 4.66
+vertex 52.1 3.1 4.8
+vertex 52.1 3.9 4.8
 endloop
 endfacet
 facet normal 1 0 0
 outer loop
 vertex 52.9 3.1 0
 vertex 52.9 3.9 0
-vertex 52.9 3.9 4.66
+vertex 52.9 3.9 4.8
 endloop
 endfacet
 facet normal 1 0 0
 outer loop
 vertex 52.9 3.1 0
-vertex 52.9 3.9 4.66
-vertex 52.9 3.1 4.66
+vertex 52.9 3.9 4.8
+vertex 52.9 3.1 4.8
 endloop
 endfacet
 endsolid contributions
