@@ -1,5 +1,6 @@
 import html
 import json
+import os
 import re
 import sys
 import urllib.request
@@ -7,8 +8,30 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 USER = "vadimtkacj1"
-WIDTH, HEIGHT = 1200, 360
-PLOT_LEFT, PLOT_TOP, PLOT_WIDTH, PLOT_HEIGHT = 56, 92, 760, 210
+WIDTH = 1200
+EDGE = 40
+PLOT_LEFT, PLOT_TOP, PLOT_WIDTH, PLOT_HEIGHT = EDGE, 92, 776, 200
+
+SHOWCASE = [
+    "hybrid-recommendation-system-diplom",
+    "fine-tuning-llama",
+    "real-estate-appraisal-agent",
+    "clip-retrieval-ai",
+    "vessel-segmentation",
+    "brain-tumour-segmentation",
+    "mindEasy-llm-chat-bot",
+]
+
+LAYERS = [
+    ("core", "Input", [("Python", "python"), ("NumPy", "numpy"), ("pandas", "pandas"), ("Jupyter", "jupyter"), ("Git", "git"), ("Linux", "linux")]),
+    ("llm", "Adapter", [("Transformers", "huggingface"), ("PEFT / LoRA", None), ("bitsandbytes", None), ("OpenAI", "openai"), ("Claude", "claude"), ("Gemini", "googlegemini")]),
+    ("vision", "Encoder", [("PyTorch", "pytorch"), ("segmentation-models", None), ("OpenCV", "opencv"), ("CLIP", "openai"), ("Albumentations", None)]),
+    ("ranking", "Hybrid", [("scikit-learn", "scikitlearn"), ("implicit ALS", None), ("sentence-transformers", "huggingface"), ("XGBoost", None)]),
+    ("serving", "Head", [("FastAPI", "fastapi"), ("Docker", "docker"), ("PostgreSQL", "postgresql"), ("SQLite", "sqlite"), ("nginx", "nginx"), ("GitHub Actions", "githubactions")]),
+    ("product", "Interface", [("TypeScript", "typescript"), ("React", "react"), ("Next.js", "nextdotjs"), ("Tailwind CSS", "tailwindcss")]),
+]
+
+ICONS = json.loads((Path(__file__).parent / "icons.json").read_text(encoding="utf-8"))
 
 THEMES = {
     "dark": {
@@ -21,25 +44,49 @@ THEMES = {
     },
 }
 
+SKYLINE_START = "<!-- skyline:start -->"
+SKYLINE_END = "<!-- skyline:end -->"
+
 MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
 SANS = "-apple-system, Segoe UI, Helvetica, Arial, sans-serif"
+MONO_CHAR = 7.4
+
+
+def request(url, accept="application/vnd.github+json"):
+    headers = {"User-Agent": "profile-cards", "Accept": accept}
+    token = os.environ.get("GITHUB_TOKEN")
+    if token and url.startswith("https://api.github.com"):
+        headers["Authorization"] = f"Bearer {token}"
+    return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30).read().decode("utf-8")
+
+
+def github_json(path):
+    return json.loads(request(f"https://api.github.com{path}"))
 
 
 def fetch_days(user):
-    request = urllib.request.Request(
-        f"https://github.com/users/{user}/contributions",
-        headers={"User-Agent": "training-run-card"},
-    )
-    html = urllib.request.urlopen(request, timeout=30).read().decode("utf-8")
-    dates = dict(re.findall(r'data-date="([0-9-]+)"[^>]*id="([^"]+)"', html))
+    page = request(f"https://github.com/users/{user}/contributions", accept="text/html")
+    dates = dict(re.findall(r'data-date="([0-9-]+)"[^>]*id="([^"]+)"', page))
     cell_to_date = {cell: day for day, cell in dates.items()}
     counts = {}
-    for cell, label in re.findall(r'<tool-tip[^>]*for="([^"]+)"[^>]*>([^<]*)', html):
+    for cell, label in re.findall(r'<tool-tip[^>]*for="([^"]+)"[^>]*>([^<]*)', page):
         if cell not in cell_to_date:
             continue
         match = re.match(r"([0-9,]+) contribution", label)
         counts[cell_to_date[cell]] = int(match.group(1).replace(",", "")) if match else 0
     return sorted((date.fromisoformat(day), count) for day, count in counts.items())
+
+
+def fetch_recent_work(user, limit=4):
+    work = []
+    for repo in SHOWCASE:
+        commits = github_json(f"/repos/{user}/{repo}/commits?per_page=1")
+        if not commits:
+            continue
+        commit = commits[0]["commit"]
+        moment = datetime.fromisoformat(commit["author"]["date"].replace("Z", "+00:00"))
+        work.append((repo, commit["message"].splitlines()[0], moment))
+    return sorted(work, key=lambda item: item[2], reverse=True)[:limit]
 
 
 def weekly_totals(days):
@@ -77,15 +124,36 @@ def longest_streak(days):
 
 
 def stats(days, weeks):
-    best_week = max(weeks) if weeks else 0
     return [
         ("epochs", f"{len(weeks)}"),
         ("contributions", f"{sum(count for _, count in days):,}"),
         ("active days", f"{sum(1 for _, count in days if count > 0)}"),
-        ("best epoch", f"{best_week}"),
+        ("best epoch", f"{max(weeks, default=0)}"),
         ("longest streak", f"{longest_streak(days)} d"),
         ("current streak", f"{current_streak(days)} d"),
     ]
+
+
+def escape(text, length=None):
+    if length and len(text) > length:
+        text = text[: length - 1] + "…"
+    return html.escape(text, quote=True)
+
+
+def frame(title, height, colors, note=""):
+    return (
+        f'<rect x="0.5" y="0.5" width="{WIDTH - 1}" height="{height - 1}" rx="12" fill="{colors["bg"]}" stroke="{colors["border"]}"/>'
+        f'<text x="{EDGE}" y="36" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" letter-spacing="1.5">{title}</text>'
+        + (f'<text x="{WIDTH - EDGE}" y="36" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" text-anchor="end">{note}</text>' if note else "")
+        + f'<line x1="0" y1="56" x2="{WIDTH}" y2="56" stroke="{colors["border"]}"/>'
+    )
+
+
+def svg(height, body, defs=""):
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}">'
+        f"{defs}{body}</svg>\n"
+    )
 
 
 def plot_points(values, peak):
@@ -96,196 +164,230 @@ def plot_points(values, peak):
     ]
 
 
-def render(days, theme):
+def render_training(days, theme):
     colors = THEMES[theme]
+    height = 344
     weeks = weekly_totals(days)
-    peak = max(max(weeks, default=1), 1) * 1.15
-    smoothed = ema(weeks)
-    points = plot_points(smoothed, peak)
+    peak = max(max(weeks, default=1), 1) * 1.18
+    points = plot_points(ema(weeks), peak)
+    raw_points = plot_points(weeks, peak)
     path = "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in points)
-    area = path + f" L{points[-1][0]:.1f} {PLOT_TOP + PLOT_HEIGHT} L{PLOT_LEFT} {PLOT_TOP + PLOT_HEIGHT} Z"
+    floor = PLOT_TOP + PLOT_HEIGHT
+    area = path + f" L{points[-1][0]:.1f} {floor} L{PLOT_LEFT} {floor} Z"
     bar_width = PLOT_WIDTH / len(weeks) * 0.55
     bars = "".join(
-        f'<rect x="{x - bar_width / 2:.1f}" y="{y:.1f}" width="{bar_width:.1f}" height="{PLOT_TOP + PLOT_HEIGHT - y:.1f}" rx="1.5" fill="{colors["bar"]}" opacity="0.55"/>'
-        for x, y in plot_points(weeks, peak)
+        f'<rect x="{x - bar_width / 2:.1f}" y="{y:.1f}" width="{bar_width:.1f}" height="{floor - y:.1f}" rx="1.5" fill="{colors["bar"]}" opacity="0.5"/>'
+        for x, y in raw_points
     )
     grid = "".join(
         f'<line x1="{PLOT_LEFT}" y1="{PLOT_TOP + PLOT_HEIGHT * fraction:.1f}" x2="{PLOT_LEFT + PLOT_WIDTH}" y2="{PLOT_TOP + PLOT_HEIGHT * fraction:.1f}" stroke="{colors["grid"]}" stroke-dasharray="3 5"/>'
         for fraction in (0, 0.25, 0.5, 0.75, 1)
     )
+    best_index = max(range(len(weeks)), key=lambda index: weeks[index])
+    best_x, best_y = raw_points[best_index]
+    label_anchor = "end" if best_x > PLOT_LEFT + PLOT_WIDTH - 120 else "start"
+    label_x = best_x - 10 if label_anchor == "end" else best_x + 10
     last_x, last_y = points[-1]
+    panel_x = PLOT_LEFT + PLOT_WIDTH + 32
+    panel_width = WIDTH - EDGE - panel_x
     rows = "".join(
-        f'<text x="880" y="{128 + index * 30}" font-family="{MONO}" font-size="14" fill="{colors["muted"]}">{label}</text>'
-        f'<text x="1144" y="{128 + index * 30}" font-family="{MONO}" font-size="14" fill="{colors["text"]}" text-anchor="end" font-weight="600">{value}</text>'
+        f'<text x="{panel_x + 20}" y="{120 + index * 30}" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">{label}</text>'
+        f'<text x="{panel_x + panel_width - 20}" y="{120 + index * 30}" font-family="{MONO}" font-size="15" font-weight="600" fill="{colors["text"]}" text-anchor="end">{value}</text>'
         for index, (label, value) in enumerate(stats(days, weeks))
     )
-    updated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}">
-  <defs>
-    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="{colors["line"]}" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="{colors["line"]}" stop-opacity="0"/>
-    </linearGradient>
-  </defs>
-  <rect x="0.5" y="0.5" width="{WIDTH - 1}" height="{HEIGHT - 1}" rx="12" fill="{colors["bg"]}" stroke="{colors["border"]}"/>
-  <circle cx="28" cy="30" r="5" fill="#ff5f57"/><circle cx="46" cy="30" r="5" fill="#febc2e"/><circle cx="64" cy="30" r="5" fill="#28c840"/>
-  <text x="88" y="35" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">python train.py --model=vadim --data=github --epochs=52</text>
-  <line x1="0" y1="56" x2="{WIDTH}" y2="56" stroke="{colors["border"]}"/>
-  <text x="{PLOT_LEFT}" y="80" font-family="{SANS}" font-size="15" font-weight="600" fill="{colors["text"]}">Training run · weekly contributions, last 52 weeks</text>
-  {grid}
-  {bars}
-  <path d="{area}" fill="url(#area)" opacity="0">
-    <animate attributeName="opacity" from="0" to="1" begin="1.6s" dur="0.8s" fill="freeze"/>
-  </path>
-  <path d="{path}" fill="none" stroke="{colors["line"]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1">
-    <animate attributeName="stroke-dashoffset" from="1" to="0" dur="2s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" keyTimes="0;1"/>
-  </path>
-  <circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="5" fill="{colors["bg"]}" stroke="{colors["dot"]}" stroke-width="2.5" opacity="0">
-    <animate attributeName="opacity" from="0" to="1" begin="2s" dur="0.3s" fill="freeze"/>
-    <animate attributeName="r" values="5;8;5" begin="2.3s" dur="2s" repeatCount="indefinite"/>
-  </circle>
-  <text x="{PLOT_LEFT}" y="{PLOT_TOP + PLOT_HEIGHT + 26}" font-family="{MONO}" font-size="12" fill="{colors["muted"]}">epoch 1</text>
-  <text x="{PLOT_LEFT + PLOT_WIDTH}" y="{PLOT_TOP + PLOT_HEIGHT + 26}" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" text-anchor="end">epoch {len(weeks)} · now</text>
-  <rect x="856" y="76" width="312" height="252" rx="8" fill="{colors["panel"]}" stroke="{colors["border"]}"/>
-  <text x="880" y="100" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" letter-spacing="1.5">METRICS</text>
-  {rows}
-  <text x="880" y="310" font-family="{MONO}" font-size="11" fill="{colors["muted"]}">checkpoint saved · {updated}</text>
-</svg>
-'''
-
-
-PREDICTIONS = [("AI Engineer", 0.91), ("ML Engineer", 0.06), ("Full-stack Developer", 0.03)]
-
-
-def fetch_languages(user):
-    request = urllib.request.Request(
-        f"https://api.github.com/users/{user}/repos?per_page=100&type=owner",
-        headers={"User-Agent": "training-run-card", "Accept": "application/vnd.github+json"},
+    updated = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    defs = (
+        f'<defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1">'
+        f'<stop offset="0" stop-color="{colors["line"]}" stop-opacity="0.26"/>'
+        f'<stop offset="1" stop-color="{colors["line"]}" stop-opacity="0"/></linearGradient></defs>'
     )
-    repos = json.loads(urllib.request.urlopen(request, timeout=30).read().decode("utf-8"))
-    counts = {}
-    for repo in repos:
-        language = repo.get("language")
-        if language and not repo.get("fork"):
-            counts[language] = counts.get(language, 0) + 1
-    total = sum(counts.values()) or 1
-    return [(name, count / total) for name, count in sorted(counts.items(), key=lambda item: -item[1])][:5]
+    body = (
+        frame("TRAINING RUN · WEEKLY CONTRIBUTIONS · LAST 52 WEEKS", height, colors, f"updated {updated}")
+        + grid
+        + bars
+        + f'<path d="{area}" fill="url(#area)" opacity="0"><animate attributeName="opacity" from="0" to="1" begin="1.6s" dur="0.8s" fill="freeze"/></path>'
+        + f'<path d="{path}" fill="none" stroke="{colors["line"]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1">'
+        f'<animate attributeName="stroke-dashoffset" from="1" to="0" dur="2s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" keyTimes="0;1"/></path>'
+        + f'<g opacity="0"><animate attributeName="opacity" from="0" to="1" begin="2.1s" dur="0.4s" fill="freeze"/>'
+        f'<circle cx="{best_x:.1f}" cy="{best_y:.1f}" r="4" fill="{colors["dot"]}"/>'
+        f'<text x="{label_x:.1f}" y="{best_y + 4:.1f}" font-family="{MONO}" font-size="12" fill="{colors["text"]}" text-anchor="{label_anchor}">peak · {weeks[best_index]}</text></g>'
+        + f'<circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="5" fill="{colors["bg"]}" stroke="{colors["line"]}" stroke-width="2.5" opacity="0">'
+        f'<animate attributeName="opacity" from="0" to="1" begin="2s" dur="0.3s" fill="freeze"/>'
+        f'<animate attributeName="r" values="5;8;5" begin="2.3s" dur="2s" repeatCount="indefinite"/></circle>'
+        + f'<text x="{PLOT_LEFT}" y="{floor + 26}" font-family="{MONO}" font-size="12" fill="{colors["muted"]}">epoch 1</text>'
+        + f'<text x="{PLOT_LEFT + PLOT_WIDTH}" y="{floor + 26}" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" text-anchor="end">epoch {len(weeks)} · now</text>'
+        + f'<rect x="{panel_x}" y="80" width="{panel_width}" height="{height - 112}" rx="8" fill="{colors["panel"]}" stroke="{colors["border"]}"/>'
+        + rows
+    )
+    return svg(height, body, defs)
 
 
-def probability_bar(x, y, width, share, color, track, delay):
-    filled = max(width * share, 4)
-    return (
-        f'<rect x="{x}" y="{y}" width="{width}" height="8" rx="4" fill="{track}"/>'
-        f'<rect x="{x}" y="{y}" width="0" height="8" rx="4" fill="{color}">'
-        f'<animate attributeName="width" from="0" to="{filled:.1f}" begin="{delay:.2f}s" dur="1.1s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" keyTimes="0;1"/></rect>'
+def luminance(hex_color):
+    channels = [int(hex_color[index:index + 2], 16) / 255 for index in (1, 3, 5)]
+    linear = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def icon_color(slug, theme, colors):
+    brand = ICONS[slug]["hex"]
+    if theme == "dark" and luminance(brand) < 0.08:
+        return colors["text"]
+    if theme == "light" and luminance(brand) > 0.45:
+        return "#" + "".join(f"{int(int(brand[index:index + 2], 16) * 0.72):02x}" for index in (1, 3, 5))
+    return brand
+
+
+def icon_symbols(theme, colors):
+    slugs = sorted({slug for _, _, tools in LAYERS for _, slug in tools if slug})
+    return "".join(
+        f'<symbol id="{slug}" viewBox="0 0 24 24"><path d="{ICONS[slug]["path"]}" fill="{icon_color(slug, theme, colors)}"/></symbol>'
+        for slug in slugs
     )
 
 
-def render_inference(languages, theme):
+def chip(x, y, label, slug, colors):
+    width = 10 + 14 + 7 + len(label) * MONO_CHAR + 12
+    glyph = (
+        f'<use href="#{slug}" x="{x + 10:.1f}" y="{y - 11}" width="14" height="14"/>'
+        if slug
+        else f'<circle cx="{x + 17:.1f}" cy="{y - 4}" r="3" fill="{colors["muted"]}"/>'
+    )
+    return width, (
+        f'<rect x="{x:.1f}" y="{y - 17}" width="{width:.1f}" height="26" rx="13" fill="{colors["panel"]}" stroke="{colors["border"]}"/>'
+        + glyph
+        + f'<text x="{x + 31:.1f}" y="{y}" font-family="{MONO}" font-size="12" fill="{colors["text"]}">{escape(label)}</text>'
+    )
+
+
+def render_stack(theme):
     colors = THEMES[theme]
-    height = 250
-    predictions = "".join(
-        f'<text x="40" y="{120 + index * 46}" font-family="{SANS}" font-size="{18 if index == 0 else 15}" font-weight="{700 if index == 0 else 400}" fill="{colors["text"] if index == 0 else colors["muted"]}">{label}</text>'
-        f'<text x="540" y="{120 + index * 46}" font-family="{MONO}" font-size="14" fill="{colors["text"] if index == 0 else colors["muted"]}" text-anchor="end">p={share:.2f}</text>'
-        + probability_bar(40, 132 + index * 46, 500, share, colors["line"] if index == 0 else colors["bar"], colors["grid"], 0.2 + index * 0.25)
-        for index, (label, share) in enumerate(PREDICTIONS)
+    header_y, top, row_height = 88, 134, 48
+    rows = []
+    for index, (name, kind, tools) in enumerate(LAYERS):
+        y = top + index * row_height
+        x = 270
+        chips = []
+        for label, slug in tools:
+            width, markup = chip(x, y, label, slug, colors)
+            chips.append(markup)
+            x += width + 8
+        divider = f'<line x1="{EDGE}" y1="{y + 22}" x2="{WIDTH - EDGE}" y2="{y + 22}" stroke="{colors["grid"]}"/>' if index < len(LAYERS) - 1 else ""
+        rows.append(
+            f'<g opacity="0"><animate attributeName="opacity" from="0" to="1" begin="{0.2 + index * 0.18:.2f}s" dur="0.35s" fill="freeze"/>'
+            f'<text x="{EDGE}" y="{y}" font-family="{MONO}" font-size="15" fill="{colors["text"]}">{name}<tspan fill="{colors["muted"]}" font-size="13"> ({kind})</tspan></text>'
+            + "".join(chips)
+            + f'<text x="{WIDTH - EDGE}" y="{y}" font-family="{MONO}" font-size="15" fill="{colors["muted"]}" text-anchor="end">{len(tools)}</text>'
+            + divider
+            + "</g>"
+        )
+    table_bottom = top + (len(LAYERS) - 1) * row_height + 26
+    total = sum(len(tools) for _, _, tools in LAYERS)
+    height = table_bottom + 52
+    body = (
+        frame("STACK · MODEL.SUMMARY()", height, colors)
+        + f'<text x="{EDGE}" y="{header_y}" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" letter-spacing="1.5">LAYER (TYPE)</text>'
+        + f'<text x="270" y="{header_y}" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" letter-spacing="1.5">COMPONENTS</text>'
+        + f'<text x="{WIDTH - EDGE}" y="{header_y}" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" letter-spacing="1.5" text-anchor="end">PARAMS</text>'
+        + f'<line x1="{EDGE}" y1="{header_y + 12}" x2="{WIDTH - EDGE}" y2="{header_y + 12}" stroke="{colors["border"]}"/>'
+        + "".join(rows)
+        + f'<line x1="{EDGE}" y1="{table_bottom}" x2="{WIDTH - EDGE}" y2="{table_bottom}" stroke="{colors["border"]}"/>'
+        + f'<text x="{EDGE}" y="{table_bottom + 30}" font-family="{MONO}" font-size="13" fill="{colors["text"]}">Total params: {total}</text>'
+        + f'<text x="{WIDTH - EDGE}" y="{table_bottom + 30}" font-family="{MONO}" font-size="13" fill="{colors["muted"]}" text-anchor="end">Trainable params: {total}</text>'
     )
-    features = "".join(
-        f'<text x="640" y="{120 + index * 34}" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">{name}</text>'
-        f'<text x="1160" y="{120 + index * 34}" font-family="{MONO}" font-size="13" fill="{colors["text"]}" text-anchor="end">{share:.0%}</text>'
-        + probability_bar(800, 112, 300, share, colors["dot"], colors["grid"], 0.6 + index * 0.15).replace('y="112"', f'y="{112 + index * 34}"')
-        for index, (name, share) in enumerate(languages)
-    )
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}">
-  <rect x="0.5" y="0.5" width="{WIDTH - 1}" height="{height - 1}" rx="12" fill="{colors["bg"]}" stroke="{colors["border"]}"/>
-  <circle cx="28" cy="30" r="5" fill="#ff5f57"/><circle cx="46" cy="30" r="5" fill="#febc2e"/><circle cx="64" cy="30" r="5" fill="#28c840"/>
-  <text x="88" y="35" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">&gt;&gt;&gt; model.predict("github.com/{USER}")</text>
-  <line x1="0" y1="56" x2="{WIDTH}" y2="56" stroke="{colors["border"]}"/>
-  <text x="40" y="84" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" letter-spacing="1.5">PREDICTED ROLE</text>
-  <text x="640" y="84" font-family="{MONO}" font-size="12" fill="{colors["muted"]}" letter-spacing="1.5">INPUT FEATURES · LANGUAGES BY REPOSITORY</text>
-  <line x1="600" y1="76" x2="600" y2="{height - 28}" stroke="{colors["border"]}"/>
-  {predictions}
-  {features}
-</svg>
-'''
-
-
-def github_json(path):
-    request = urllib.request.Request(
-        f"https://api.github.com{path}",
-        headers={"User-Agent": "training-run-card", "Accept": "application/vnd.github+json"},
-    )
-    return json.loads(urllib.request.urlopen(request, timeout=30).read().decode("utf-8"))
-
-
-def fetch_recent_work(user, limit=4):
-    repos = github_json(f"/users/{user}/repos?per_page=30&sort=pushed&type=owner")
-    work = []
-    for repo in repos:
-        if repo.get("fork") or repo["name"] == user:
-            continue
-        commits = github_json(f"/repos/{user}/{repo['name']}/commits?per_page=1")
-        if not commits:
-            continue
-        message = commits[0]["commit"]["message"].splitlines()[0]
-        pushed = datetime.fromisoformat(commits[0]["commit"]["author"]["date"].replace("Z", "+00:00"))
-        work.append((repo["name"], message, pushed))
-        if len(work) == limit:
-            break
-    return work
+    return svg(height, body, f"<defs>{icon_symbols(theme, colors)}</defs>")
 
 
 def ago(moment):
     hours = int((datetime.now(timezone.utc) - moment).total_seconds() // 3600)
     if hours < 24:
         return f"{max(hours, 1)}h ago"
-    return f"{hours // 24}d ago"
+    if hours < 24 * 60:
+        return f"{hours // 24}d ago"
+    return moment.strftime("%b %Y")
 
 
-def clip(text, length):
-    text = text if len(text) <= length else text[: length - 1] + "…"
-    return html.escape(text, quote=True)
-
-
-def render_agent(work, theme):
+def render_recent(work, theme):
     colors = THEMES[theme]
-    lines = [(colors["muted"], f'task: "keep shipping"', "")]
-    for repo, message, pushed in work:
-        lines.append((colors["dot"], f'→ tool_call  git.log(repo="{clip(repo, 34)}")', ""))
-        lines.append((colors["text"], f'  ✓ {clip(message, 62)}', ago(pushed)))
-    lines.append((colors["line"], f"✓ done · {len(work)} repositories shipped recently", ""))
-    height = 92 + len(lines) * 26 + 20
+    top, row_height = 92, 34
+    height = top + len(work) * row_height + 14
     rows = "".join(
-        f'<g opacity="0"><animate attributeName="opacity" from="0" to="1" begin="{0.3 + index * 0.35:.2f}s" dur="0.25s" fill="freeze"/>'
-        f'<text x="40" y="{100 + index * 26}" font-family="{MONO}" font-size="14" fill="{color}">{text}</text>'
-        + (f'<text x="1160" y="{100 + index * 26}" font-family="{MONO}" font-size="13" fill="{colors["muted"]}" text-anchor="end">{note}</text>' if note else "")
-        + "</g>"
-        for index, (color, text, note) in enumerate(lines)
+        f'<g opacity="0"><animate attributeName="opacity" from="0" to="1" begin="{0.2 + index * 0.2:.2f}s" dur="0.35s" fill="freeze"/>'
+        f'<circle cx="{EDGE + 4}" cy="{top + index * row_height - 4}" r="4" fill="{colors["line"] if index == 0 else colors["border"]}"/>'
+        f'<text x="{EDGE + 20}" y="{top + index * row_height}" font-family="{MONO}" font-size="14" fill="{colors["text"]}">{escape(repo, 30)}</text>'
+        f'<text x="340" y="{top + index * row_height}" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">{escape(message, 82)}</text>'
+        f'<text x="{WIDTH - EDGE}" y="{top + index * row_height}" font-family="{MONO}" font-size="13" fill="{colors["muted"]}" text-anchor="end">{ago(moment)}</text>'
+        "</g>"
+        for index, (repo, message, moment) in enumerate(work)
     )
-    cursor_y = 100 + (len(lines) - 1) * 26
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}">
-  <rect x="0.5" y="0.5" width="{WIDTH - 1}" height="{height - 1}" rx="12" fill="{colors["bg"]}" stroke="{colors["border"]}"/>
-  <circle cx="28" cy="30" r="5" fill="#ff5f57"/><circle cx="46" cy="30" r="5" fill="#febc2e"/><circle cx="64" cy="30" r="5" fill="#28c840"/>
-  <text x="88" y="35" font-family="{MONO}" font-size="13" fill="{colors["muted"]}">agent.run() · live trace of recent commits</text>
-  <line x1="0" y1="56" x2="{WIDTH}" y2="56" stroke="{colors["border"]}"/>
-  {rows}
-  <rect x="{48 + len(lines[-1][1]) * 8.4:.0f}" y="{cursor_y - 13}" width="8" height="16" fill="{colors["line"]}" opacity="0">
-    <animate attributeName="opacity" values="0;1;0" begin="{0.3 + len(lines) * 0.35:.2f}s" dur="1s" repeatCount="indefinite"/>
-  </rect>
-</svg>
-'''
+    return svg(height, frame("LATEST COMMITS · SHOWCASE REPOSITORIES", height, colors) + rows)
+
+
+def quad(points, normal):
+    a, b, c, d = points
+    return [(normal, a, b, c), (normal, a, c, d)]
+
+
+def box(x, y, z, sx, sy, sz, with_bottom=False):
+    x1, y1, z1 = x + sx, y + sy, z + sz
+    faces = [
+        quad([(x, y, z1), (x1, y, z1), (x1, y1, z1), (x, y1, z1)], (0, 0, 1)),
+        quad([(x, y, z), (x1, y, z), (x1, y, z1), (x, y, z1)], (0, -1, 0)),
+        quad([(x1, y1, z), (x, y1, z), (x, y1, z1), (x1, y1, z1)], (0, 1, 0)),
+        quad([(x, y1, z), (x, y, z), (x, y, z1), (x, y1, z1)], (-1, 0, 0)),
+        quad([(x1, y, z), (x1, y1, z), (x1, y1, z1), (x1, y, z1)], (1, 0, 0)),
+    ]
+    if with_bottom:
+        faces.append(quad([(x, y1, z), (x1, y1, z), (x1, y, z), (x, y, z)], (0, 0, -1)))
+    return [triangle for face in faces for triangle in face]
+
+
+def number(value):
+    return f"{value:.2f}".rstrip("0").rstrip(".")
+
+
+def render_skyline(days):
+    first = days[0][0]
+    start = first.toordinal() - (first.weekday() + 1) % 7
+    peak = max(count for _, count in days) or 1
+    weeks = (days[-1][0].toordinal() - start) // 7 + 1
+    triangles = box(-1, -1, -1.2, weeks + 1.2, 8.2, 1.2, with_bottom=True)
+    for day, count in days:
+        if count == 0:
+            continue
+        week = (day.toordinal() - start) // 7
+        weekday = (day.weekday() + 1) % 7
+        triangles += box(week + 0.1, 6 - weekday + 0.1, 0, 0.8, 0.8, 0.6 + 11 * (count / peak) ** 0.5)
+    lines = ["solid contributions"]
+    for normal, *vertices in triangles:
+        lines.append(f"facet normal {' '.join(number(v) for v in normal)}")
+        lines.append("outer loop")
+        lines.extend(f"vertex {' '.join(number(v) for v in vertex)}" for vertex in vertices)
+        lines.append("endloop")
+        lines.append("endfacet")
+    lines.append("endsolid contributions")
+    return "\n".join(lines)
+
+
+def replace_between(text, start_marker, end_marker, content):
+    start = text.index(start_marker) + len(start_marker)
+    end = text.index(end_marker)
+    return text[:start] + "\n" + content + "\n" + text[end:]
 
 
 def main():
     output = Path(sys.argv[1] if len(sys.argv) > 1 else "assets")
     output.mkdir(parents=True, exist_ok=True)
     days = fetch_days(USER)
-    languages = fetch_languages(USER)
     work = fetch_recent_work(USER)
     for theme in THEMES:
-        (output / f"agent-{theme}.svg").write_text(render_agent(work, theme), encoding="utf-8")
-        (output / f"training-run-{theme}.svg").write_text(render(days, theme), encoding="utf-8")
-        (output / f"inference-{theme}.svg").write_text(render_inference(languages, theme), encoding="utf-8")
+        (output / f"training-run-{theme}.svg").write_text(render_training(days, theme), encoding="utf-8")
+        (output / f"stack-{theme}.svg").write_text(render_stack(theme), encoding="utf-8")
+        (output / f"recent-{theme}.svg").write_text(render_recent(work, theme), encoding="utf-8")
+    readme = output.parent / "README.md"
+    text = readme.read_text(encoding="utf-8")
+    if SKYLINE_START in text and days:
+        skyline = f"```stl\n{render_skyline(days)}\n```"
+        readme.write_text(replace_between(text, SKYLINE_START, SKYLINE_END, skyline), encoding="utf-8")
 
 
 if __name__ == "__main__":
