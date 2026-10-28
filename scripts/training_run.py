@@ -44,9 +44,6 @@ THEMES = {
     },
 }
 
-SKYLINE_START = "<!-- skyline:start -->"
-SKYLINE_END = "<!-- skyline:end -->"
-
 MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
 SANS = "-apple-system, Segoe UI, Helvetica, Arial, sans-serif"
 MONO_CHAR = 7.4
@@ -322,58 +319,6 @@ def render_recent(work, theme):
     return svg(height, frame("LATEST COMMITS · SHOWCASE REPOSITORIES", height, colors) + rows)
 
 
-def quad(points, normal):
-    a, b, c, d = points
-    return [(normal, a, b, c), (normal, a, c, d)]
-
-
-def box(x, y, z, sx, sy, sz, with_bottom=False):
-    x1, y1, z1 = x + sx, y + sy, z + sz
-    faces = [
-        quad([(x, y, z1), (x1, y, z1), (x1, y1, z1), (x, y1, z1)], (0, 0, 1)),
-        quad([(x, y, z), (x1, y, z), (x1, y, z1), (x, y, z1)], (0, -1, 0)),
-        quad([(x1, y1, z), (x, y1, z), (x, y1, z1), (x1, y1, z1)], (0, 1, 0)),
-        quad([(x, y1, z), (x, y, z), (x, y, z1), (x, y1, z1)], (-1, 0, 0)),
-        quad([(x1, y, z), (x1, y1, z), (x1, y1, z1), (x1, y, z1)], (1, 0, 0)),
-    ]
-    if with_bottom:
-        faces.append(quad([(x, y1, z), (x1, y1, z), (x1, y, z), (x, y, z)], (0, 0, -1)))
-    return [triangle for face in faces for triangle in face]
-
-
-def number(value):
-    return f"{value:.2f}".rstrip("0").rstrip(".")
-
-
-def render_skyline(days):
-    first = days[0][0]
-    start = first.toordinal() - (first.weekday() + 1) % 7
-    peak = max(count for _, count in days) or 1
-    weeks = (days[-1][0].toordinal() - start) // 7 + 1
-    triangles = box(-1, -1, -1.2, weeks + 1.2, 8.2, 1.2, with_bottom=True)
-    for day, count in days:
-        if count == 0:
-            continue
-        week = (day.toordinal() - start) // 7
-        weekday = (day.weekday() + 1) % 7
-        triangles += box(week + 0.1, 6 - weekday + 0.1, 0, 0.8, 0.8, 0.8 + 24 * (count / peak) ** 0.5)
-    lines = ["solid contributions"]
-    for normal, *vertices in triangles:
-        lines.append(f"facet normal {' '.join(number(v) for v in normal)}")
-        lines.append("outer loop")
-        lines.extend(f"vertex {' '.join(number(v) for v in vertex)}" for vertex in vertices)
-        lines.append("endloop")
-        lines.append("endfacet")
-    lines.append("endsolid contributions")
-    return "\n".join(lines)
-
-
-def replace_between(text, start_marker, end_marker, content):
-    start = text.index(start_marker) + len(start_marker)
-    end = text.index(end_marker)
-    return text[:start] + "\n" + content + "\n" + text[end:]
-
-
 def main():
     output = Path(sys.argv[1] if len(sys.argv) > 1 else "assets")
     output.mkdir(parents=True, exist_ok=True)
@@ -383,11 +328,6 @@ def main():
         (output / f"training-run-{theme}.svg").write_text(render_training(days, theme), encoding="utf-8")
         (output / f"stack-{theme}.svg").write_text(render_stack(theme), encoding="utf-8")
         (output / f"recent-{theme}.svg").write_text(render_recent(work, theme), encoding="utf-8")
-    readme = output.parent / "README.md"
-    text = readme.read_text(encoding="utf-8")
-    if SKYLINE_START in text and days:
-        skyline = f"```stl\n{render_skyline(days)}\n```"
-        readme.write_text(replace_between(text, SKYLINE_START, SKYLINE_END, skyline), encoding="utf-8")
 
 
 if __name__ == "__main__":
