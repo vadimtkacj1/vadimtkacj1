@@ -13,6 +13,7 @@ EDGE = 40
 PLOT_LEFT, PLOT_TOP, PLOT_WIDTH, PLOT_HEIGHT = EDGE, 92, 776, 200
 
 SHOWCASE = [
+    "rag-eval-service",
     "hybrid-recommendation-system-diplom",
     "fine-tuning-llama",
     "real-estate-appraisal-agent",
